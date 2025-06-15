@@ -64,11 +64,12 @@ def decode_flac_ffmpeg(path: tf.Tensor, sample_rate: int = 16000, channels: int 
     tf.Tensor
         A float32 tensor containing the waveform normalized between [-1, 1].
     """
-    def _decode(path_str: bytes) -> tf.Tensor:
-        path = path_str.decode("utf-8")
+    def _decode(t: tf.Tensor) -> tf.Tensor:
+        # path = path_str.decode("utf-8")
+        path_str = t.numpy().decode("utf-8")
         command = [
             "ffmpeg",
-            "-i", path,
+            "-i", path_str,
             "-f", "s16le",             # raw 16-bit PCM
             "-acodec", "pcm_s16le",
             "-ar", str(sample_rate),
@@ -79,7 +80,7 @@ def decode_flac_ffmpeg(path: tf.Tensor, sample_rate: int = 16000, channels: int 
         try:
             raw_audio = subprocess.check_output(command)
         except subprocess.CalledProcessError as e:
-            raise RuntimeError(f"FFmpeg failed on file: {path}") from e
+            raise RuntimeError(f"FFmpeg failed on file: {path_str}") from e
 
         audio = tf.io.decode_raw(raw_audio, tf.int16)
         audio = tf.cast(audio, tf.float32) / 32768.0  # Normalize to [-1, 1]
@@ -107,13 +108,9 @@ def make_flac_dataset(root: str | Path, desired_channels: int = 1):
 
     # TF‐side loader
     def _load(path):
-        raw = tf.io.read_file(path)
-        wav, sr = decode_flac_ffmpeg(
-            raw,
-            desired_channels=desired_channels,   # mono by default
-            desired_samples=-1                  # keep native length
-        )
-        return wav, sr
+        # raw = tf.io.read_file(path)
+        audio = decode_flac_ffmpeg(path)
+        return audio, tf.constant(16000, tf.int32)
 
     return ds.map(_load, num_parallel_calls=tf.data.AUTOTUNE)
 
@@ -121,21 +118,6 @@ def make_flac_dataset(root: str | Path, desired_channels: int = 1):
 if __name__ == "__main__":
     base = r"data\dev-clean\LibriSpeech\dev-clean"  # or Path("...")
 
-    print("First 5 discovered FLAC files:")
-    for n, p in enumerate(iter_flac_files(base)):
-        print(" ", p)
-        if n == 4:
-            break
-
-    try:
-        dataset = make_flac_dataset(base)
-        audio, sr = next(iter(dataset))
-        print("\nDecoded first sample:", audio.shape, "at", sr.numpy(), "Hz")
-    except ModuleNotFoundError:
-        print("\nTensorFlow not installed – skipping dataset demo.")
-
-
-# function to convert np.ndarray to spectrogram
-
-
-# function to show spectrogram
+    dataset = make_flac_dataset(base)
+    audio, sr = next(iter(dataset))
+    print("\nDecoded first sample:", audio.shape, "at", sr.numpy(), "Hz")
