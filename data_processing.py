@@ -8,15 +8,17 @@ idx2char = {i: c for c, i in char2idx.items()}
 BATCH_SIZE = 8
 
 
+@tf.function
 def extract_features(waveform, sample_rate=16000):
     stfts = tf.signal.stft(waveform, frame_length=640, frame_step=320, fft_length=1024)
     spectrogram = tf.abs(stfts)
 
     num_mel_bins = 64
+    num_spectrogram_bins = stfts.shape[-1]
     lower_edge_hertz, upper_edge_hertz = 80.0, sample_rate / 2
     linear_to_mel_weight_matrix = tf.signal.linear_to_mel_weight_matrix(
         num_mel_bins,
-        tf.shape(spectrogram)[-1],
+        num_spectrogram_bins,
         sample_rate,
         lower_edge_hertz,
         upper_edge_hertz)
