@@ -8,28 +8,27 @@ idx2char = {i: c for c, i in char2idx.items()}
 BATCH_SIZE = 8
 
 
+FFT_LENGTH = 1024
+NUM_MEL_BINS = 64
+SAMPLE_RATE = 16000
+lower_hz, upper_hz = 80.0, SAMPLE_RATE / 2
+NUM_SPECTRO_BINS = FFT_LENGTH // 2 + 1
+
+MEL_WT = tf.signal.linear_to_mel_weight_matrix(
+    NUM_MEL_BINS,
+    NUM_SPECTRO_BINS,
+    SAMPLE_RATE,
+    lower_hz,
+    upper_hz
+)
+
+
 @tf.function
 def extract_features(waveform, sample_rate=16000):
-    stfts = tf.signal.stft(waveform, frame_length=640, frame_step=320, fft_length=1024)
+    stfts = tf.signal.stft(waveform, frame_length=640, frame_step=320, fft_length=FFT_LENGTH)
     spectrogram = tf.abs(stfts)
 
-    num_mel_bins = 64
-    num_spectrogram_bins = stfts.shape[-1]
-    lower_edge_hertz, upper_edge_hertz = 80.0, sample_rate / 2
-    linear_to_mel_weight_matrix = tf.signal.linear_to_mel_weight_matrix(
-        num_mel_bins,
-        num_spectrogram_bins,
-        sample_rate,
-        lower_edge_hertz,
-        upper_edge_hertz)
-
-    linear_to_mel_weight_matrix = tf.cast(linear_to_mel_weight_matrix,
-                                          dtype=spectrogram.dtype)
-
-    mel_spectrogram = tf.tensordot(spectrogram,
-                                   linear_to_mel_weight_matrix,
-                                   1)
-
+    mel_spectrogram = tf.tensordot(spectrogram, tf.cast(MEL_WT, spectrogram.dtype), 1)
     return tf.math.log(mel_spectrogram + 1e-6)
 
 

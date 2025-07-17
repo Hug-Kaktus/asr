@@ -4,8 +4,6 @@ from datasets import load_dataset
 from models import build_ctc_model
 from data_processing import prepare_dataset, VOCAB
 
-# tf.data.experimental.enable_debug_mode()
-
 
 def ctc_batch_cost(y_true, y_pred, input_lengths, label_lengths):
     """
@@ -93,6 +91,5 @@ dataset = load_dataset("speech-uk/voice-of-america", split='train', streaming=Tr
 
 prepared_ds = prepare_dataset(dataset)
 base_model = build_ctc_model(num_classes=len(VOCAB))
-# base_model = deep_ctc_model(num_classes=len(VOCAB))
 ctc_model = CTCLossModel(base_model)
-train(ctc_model, prepared_ds, epochs=10)
+train(ctc_model, prepared_ds, epochs=1)

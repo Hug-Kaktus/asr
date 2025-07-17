@@ -42,30 +42,3 @@ def deep_ctc_model(num_classes):
     outputs = tf.keras.layers.Dense(num_classes + 1)(x)  # +1 for CTC blank token
 
     return tf.keras.Model(inputs=inputs, outputs=outputs)
-
-
-# class DebugLayer(tf.keras.layers.Layer):
-#     def __init__(self, layer, name=None):
-#         super().__init__(name=name)
-#         self.layer = layer
-# 
-#     def call(self, inputs, **kwargs):
-#         print(f"Input to {self.layer.name}: {inputs.shape}")
-#         output = self.layer(inputs, **kwargs)
-#         print(f"Output from {self.layer.name}: {output.shape}")
-#         return output
-# 
-# 
-# def build_debug_ctc_model(num_classes):
-#     inputs = tf.keras.Input(shape=(None, 64))  # (time_steps, mel_bins)
-# 
-#     x = DebugLayer(tf.keras.layers.Conv1D(128, 5, padding='same', activation='relu', name='conv1d'))(inputs)
-#     x = DebugLayer(tf.keras.layers.MaxPooling1D(2, name='maxpool'))(x)
-# 
-#     x = DebugLayer(tf.keras.layers.Bidirectional(
-#         tf.keras.layers.GRU(128, return_sequences=True), name='bidir_gru'))(x)
-# 
-#     x = DebugLayer(tf.keras.layers.Dropout(0.3, name='dropout'))(x)
-#     x = DebugLayer(tf.keras.layers.Dense(num_classes + 1, name='logits'))(x)  # +1 for CTC blank
-# 
-#     return tf.keras.Model(inputs=inputs, outputs=x)
