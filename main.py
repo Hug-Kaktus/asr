@@ -1,7 +1,9 @@
 import tensorflow as tf
+# from tensorflow import keras
+import keras
 from datasets import load_dataset
 
-from models import build_ctc_model
+from models import build_ctc_model, build_ctc_model_CNN
 from data_processing import prepare_dataset, VOCAB
 
 
@@ -31,11 +33,44 @@ def ctc_batch_cost(y_true, y_pred, input_lengths, label_lengths):
     return loss
 
 
+@keras.saving.register_keras_serializable()
 class CTCLossModel(tf.keras.Model):
-    def __init__(self, base_model):
-        super().__init__()
+    def __init__(self, base_model, **kwargs):
+        super().__init__(**kwargs)
         self.base = base_model
         self.loss_tracker = tf.keras.metrics.Mean(name="loss")
+
+    def get_config(self):
+        config = super().get_config()
+        # Serialize the inner model by config, not the object
+        config.update({
+            "base_model_config": self.base.get_config(),
+            "base_model_class": self.base.__class__.__name__
+        })
+        return config
+
+    @classmethod
+    def from_config(cls, config):
+        base_model_config = config.pop("base_model_config")
+        base_model_class_name = config.pop("base_model_class")
+
+        # Rebuild the base model using its class and config
+        base_model_class = getattr(tf.keras.models, base_model_class_name, None)
+        if base_model_class is None:
+            base_model = tf.keras.Model.from_config(base_model_config)
+        else:
+            base_model = base_model_class.from_config(base_model_config)
+
+        return cls(base_model, **config)
+
+    def get_build_config(self):
+        # Keras saves this at save-time to later rebuild layers
+        return {"input_shape": (None, None, 64)}
+
+    def build_from_config(self, config):
+        # Called during loading to rebuild the model's variables
+        input_shape = config["input_shape"]
+        self.build(input_shape)
 
     @property
     def metrics(self):
@@ -58,6 +93,9 @@ class CTCLossModel(tf.keras.Model):
         self.loss_tracker.update_state(loss)
         return {"loss": self.loss_tracker.result()}
 
+    def call(self, inputs):
+        return self.base(inputs)
+
 
 def train(model: CTCLossModel, dataset: tf.data.Dataset, epochs: int):
     optimizer = tf.keras.optimizers.Adam()
@@ -71,8 +109,15 @@ def train(model: CTCLossModel, dataset: tf.data.Dataset, epochs: int):
             logs = model.train_step(batch)
             if step % 10 == 0:
                 print(f"  Step {step}: Loss = {logs['loss']:.4f}")
-
+                if logs['loss'] < 5:
+                    dummy_input = tf.random.normal([1, 100, 64])
+                    _ = model(dummy_input)
+                    model.save('./final_model.keras')
+                    return
         print(f"Epoch {epoch + 1} completed. Avg Loss: {logs['loss']:.4f}")
+    dummy_input = tf.random.normal([1, 100, 64])
+    _ = model(dummy_input)
+    model.save('./final_model.keras')
 
 
 """
@@ -87,9 +132,11 @@ Dataset element structure:
     transcription: str,
 }
 """
-dataset = load_dataset("speech-uk/voice-of-america", split='train', streaming=True)
+# dataset = load_dataset("speech-uk/voice-of-america", split='train', streaming=True)
 
-prepared_ds = prepare_dataset(dataset)
+# prepared_ds = prepare_dataset(dataset)
 base_model = build_ctc_model(num_classes=len(VOCAB))
 ctc_model = CTCLossModel(base_model)
-train(ctc_model, prepared_ds, epochs=1)
+# train(ctc_model, prepared_ds, epochs=2)
+base_model.summary()
+# loaded_model = keras.models.load_model('./final_model.keras', custom_objects={"CTCLossModel": CTCLossModel})

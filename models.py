@@ -6,12 +6,32 @@ def build_ctc_model(num_classes):
     x = tf.keras.layers.Conv1D(128, 5, padding='same', activation='relu')(inputs)
     x = tf.keras.layers.MaxPooling1D(2)(x)
 
-    x = tf.keras.layers.Bidirectional(tf.keras.layers.GRU(128, return_sequences=True))(x)
+    x = tf.keras.layers.Bidirectional(tf.keras.layers.GRU(256, return_sequences=True))(x)
+    x = tf.keras.layers.Bidirectional(tf.keras.layers.GRU(256, return_sequences=True))(x)
     x = tf.keras.layers.Dropout(0.3)(x)
 
     x = tf.keras.layers.Dense(num_classes + 1)(x)  # +1 for the CTC 'blank' token
 
     return tf.keras.Model(inputs=inputs, outputs=x)
+
+
+def build_ctc_model_CNN(num_classes):
+    inputs = tf.keras.Input(shape=(None, 64))
+
+    # Temporal CNN front-end
+    x = tf.keras.layers.Conv1D(256, 5, strides=1, padding='same', activation='relu')(inputs)
+    x = tf.keras.layers.BatchNormalization()(x)
+    x = tf.keras.layers.Conv1D(256, 5, strides=2, padding='same', activation='relu')(x)  # Downsample by 2
+
+    # Deep recurrent encoder
+    for _ in range(3):
+        x = tf.keras.layers.Bidirectional(
+            tf.keras.layers.LSTM(256, return_sequences=True)
+        )(x)
+        x = tf.keras.layers.Dropout(0.3)(x)
+
+    outputs = tf.keras.layers.Dense(num_classes + 1)(x)
+    return tf.keras.Model(inputs, outputs)
 
 
 def deep_ctc_model(num_classes):
