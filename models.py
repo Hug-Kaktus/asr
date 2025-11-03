@@ -1,64 +1,29 @@
 import tensorflow as tf
 
 
-def build_ctc_model(num_classes):
-    inputs = tf.keras.Input(shape=(None, 64))  # (time_steps, mel_bins)
-    x = tf.keras.layers.Conv1D(128, 5, padding='same', activation='relu')(inputs)
-    x = tf.keras.layers.MaxPooling1D(2)(x)
-
-    x = tf.keras.layers.Bidirectional(tf.keras.layers.GRU(256, return_sequences=True))(x)
-    x = tf.keras.layers.Bidirectional(tf.keras.layers.GRU(256, return_sequences=True))(x)
-    x = tf.keras.layers.Dropout(0.3)(x)
-
-    x = tf.keras.layers.Dense(num_classes + 1)(x)  # +1 for the CTC 'blank' token
-
-    return tf.keras.Model(inputs=inputs, outputs=x)
-
-
-def build_ctc_model_CNN(num_classes):
+def build_wav2vec2_ctc_model(num_classes, model_dim=256, num_layers=6, num_heads=4, ff_dim=1024):
     inputs = tf.keras.Input(shape=(None, 64))
 
-    # Temporal CNN front-end
-    x = tf.keras.layers.Conv1D(256, 5, strides=1, padding='same', activation='relu')(inputs)
-    x = tf.keras.layers.BatchNormalization()(x)
-    x = tf.keras.layers.Conv1D(256, 5, strides=2, padding='same', activation='relu')(x)  # Downsample by 2
+    x = tf.keras.layers.Conv1D(128, 10, strides=5, padding='same', activation='gelu')(inputs)
+    x = tf.keras.layers.Conv1D(256, 3, strides=2, padding='same', activation='gelu')(x)
+    x = tf.keras.layers.Conv1D(model_dim, 3, strides=2, padding='same', activation='gelu')(x)
 
-    # Deep recurrent encoder
-    for _ in range(3):
-        x = tf.keras.layers.Bidirectional(
-            tf.keras.layers.LSTM(256, return_sequences=True)
-        )(x)
-        x = tf.keras.layers.Dropout(0.3)(x)
+    pos_emb = tf.keras.layers.Embedding(1000, model_dim)(tf.range(tf.shape(x)[1]))
+    pos_emb = tf.expand_dims(pos_emb, 0)
+    x = x + pos_emb[:, :tf.shape(x)[1], :]
 
-    outputs = tf.keras.layers.Dense(num_classes + 1)(x)
-    return tf.keras.Model(inputs, outputs)
+    for _ in range(num_layers):
+        attn_out = tf.keras.layers.MultiHeadAttention(num_heads=num_heads, key_dim=model_dim//num_heads)(x, x)
+        attn_out = tf.keras.layers.Dropout(0.1)(attn_out)
+        x = tf.keras.layers.LayerNormalization(epsilon=1e-6)(x + attn_out)
 
+        ffn = tf.keras.Sequential([
+            tf.keras.layers.Dense(ff_dim, activation='gelu'),
+            tf.keras.layers.Dense(model_dim),
+            tf.keras.layers.Dropout(0.1)
+        ])
+        x = tf.keras.layers.LayerNormalization(epsilon=1e-6)(x + ffn(x))
 
-def deep_ctc_model(num_classes):
-    inputs = tf.keras.Input(shape=(None, 64), name="input")  # (time_steps, mel_bins)
-    x = inputs
+    x = tf.keras.layers.Dense(num_classes + 1, name="ctc_logits")(x)
 
-    # 1. Initial Conv1D stack (deep temporal feature extraction)
-    for filters, kernel_size, dropout in [
-        (256, 11, 0.1),
-        (256, 11, 0.1),
-        (384, 13, 0.2),
-        (512, 15, 0.2),
-    ]:
-        x = tf.keras.layers.Conv1D(filters, kernel_size, padding="same")(x)
-        x = tf.keras.layers.BatchNormalization()(x)
-        x = tf.keras.layers.ReLU()(x)
-        x = tf.keras.layers.Dropout(dropout)(x)
-
-    # 3. Recurrent layers (for long-range dependency)
-    x = tf.keras.layers.Bidirectional(tf.keras.layers.GRU(256, return_sequences=True))(x)
-    x = tf.keras.layers.Dropout(0.3)(x)
-    x = tf.keras.layers.Bidirectional(tf.keras.layers.GRU(256, return_sequences=True))(x)
-    x = tf.keras.layers.Dropout(0.3)(x)
-
-    # 4. Final dense projection
-    x = tf.keras.layers.Dense(512, activation="relu")(x)
-    x = tf.keras.layers.Dropout(0.3)(x)
-    outputs = tf.keras.layers.Dense(num_classes + 1)(x)  # +1 for CTC blank token
-
-    return tf.keras.Model(inputs=inputs, outputs=outputs)
+    return tf.keras.Model(inputs=inputs, outputs=x, name="wav2vec2_ctc")
