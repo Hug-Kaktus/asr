@@ -8,9 +8,14 @@ def build_wav2vec2_ctc_model(num_classes, model_dim=256, num_layers=6, num_heads
     x = tf.keras.layers.Conv1D(256, 3, strides=2, padding='same', activation='gelu')(x)
     x = tf.keras.layers.Conv1D(model_dim, 3, strides=2, padding='same', activation='gelu')(x)
 
-    pos_emb = tf.keras.layers.Embedding(1000, model_dim)(tf.range(tf.shape(x)[1]))
-    pos_emb = tf.expand_dims(pos_emb, 0)
-    x = x + pos_emb[:, :tf.shape(x)[1], :]
+    def add_pos_emb(tensor):
+        seq_len = tf.shape(tensor)[1]
+        positions = tf.range(seq_len)
+        pos_emb = tf.keras.layers.Embedding(1000, model_dim)(positions)
+        pos_emb = pos_emb[tf.newaxis, :, :]  # (1, seq_len, dim)
+        return tensor + pos_emb[:, :seq_len, :]
+
+    x = tf.keras.layers.Lambda(add_pos_emb)(x)
 
     for _ in range(num_layers):
         attn_out = tf.keras.layers.MultiHeadAttention(num_heads=num_heads, key_dim=model_dim//num_heads)(x, x)
@@ -26,4 +31,4 @@ def build_wav2vec2_ctc_model(num_classes, model_dim=256, num_layers=6, num_heads
 
     x = tf.keras.layers.Dense(num_classes + 1, name="ctc_logits")(x)
 
-    return tf.keras.Model(inputs=inputs, outputs=x, name="wav2vec2_ctc")
+    return tf.keras.Model(inputs, x, name="wav2vec2_ctc_midsize")
