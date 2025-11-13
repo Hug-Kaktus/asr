@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width,initial-scale=1" />
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'styles/styles.css' %}">
+
+	<title>Розпізнавання мови з відео</title>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const fileInput = document.querySelector('#id_video');
+            const fileChosen = document.querySelector('#file-chosen');
+            const fileLabel = document.querySelector('label[for=id_video]');
+            if (fileInput) {
+                    fileInput.addEventListener('change', function() {
+                        fileChosen.textContent = this.files.length > 0 ? this.files[0].name : 'Файл не вибрано';
+                });
+            }
+        });
+    </script>
+</head>
+<body>
+	<div class="container">
+		<div class="card">
+			{% block content %}{% endblock %}
+		</div>
+	</div>
+</body>
+</html>

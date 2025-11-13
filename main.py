@@ -1,9 +1,8 @@
 import tensorflow as tf
-# from tensorflow import keras
 import keras
 from datasets import load_dataset
 
-from models import build_ctc_model, build_ctc_model_CNN
+from models import build_wav2vec2_ctc_model
 from data_processing import prepare_dataset, VOCAB
 
 
@@ -132,11 +131,15 @@ Dataset element structure:
     transcription: str,
 }
 """
-# dataset = load_dataset("speech-uk/voice-of-america", split='train', streaming=True)
 
-# prepared_ds = prepare_dataset(dataset)
-base_model = build_ctc_model(num_classes=len(VOCAB))
-ctc_model = CTCLossModel(base_model)
-# train(ctc_model, prepared_ds, epochs=2)
-base_model.summary()
-# loaded_model = keras.models.load_model('./final_model.keras', custom_objects={"CTCLossModel": CTCLossModel})
+if __name__ == '__main__':
+    # dataset = load_dataset("speech-uk/voice-of-america", split='train', streaming=True)
+
+    # prepared_ds = prepare_dataset(dataset)
+    dummy_input = tf.random.normal([1, 100, 64])
+    base_model = build_wav2vec2_ctc_model(num_classes=len(VOCAB))
+    # ctc_model = CTCLossModel(base_model)
+    # train(ctc_model, prepared_ds, epochs=2)
+    base_model(dummy_input)
+    base_model.summary()
+    # loaded_model = keras.models.load_model('./final_model.keras', custom_objects={"CTCLossModel": CTCLossModel})

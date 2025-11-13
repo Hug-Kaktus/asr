@@ -1,0 +1,103 @@
+:root{
+    --bg: #f6f8fb;
+    --card: #ffffff;
+    --muted: #6b7280;
+    --accent: #2563eb;
+    --radius: 12px;
+    font-family: Inter, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial;
+}
+
+body {
+    background:var(--bg);
+    margin:0;
+    padding:24px;
+}
+
+.container {
+    max-width:900px;
+    margin:24px auto;
+}
+
+.card {
+    background:var(--card);
+    border-radius:var(--radius);
+    box-shadow:0 6px 24px rgba(16,24,40,0.08);
+    padding:28px;
+}
+
+h1 {
+    margin-top:0;
+    font-size:1.6rem;
+}
+
+label {
+    display:block;
+    font-weight:600;
+    margin-bottom:8px;
+}
+
+input[type=file] {
+    display:none;
+}
+
+.btn {
+    display:inline-block;
+    padding:10px 16px;
+    border-radius:10px;
+    background:var(--accent);
+    color:white;
+    text-decoration:none;
+    border:none;
+    cursor:pointer;
+}
+
+.muted {
+    color:var(--muted);
+}
+
+.transcript {
+white-space:pre-wrap;
+line-height:1.6;
+font-size:1rem;
+background:#fbfdff;
+padding:18px;
+border-radius:10px;
+margin-top:12px;
+border:1px solid #eff3ff;
+}
+
+.meta {
+    display:flex;
+    gap:12px;
+    align-items:center;
+    margin-bottom:12px;
+}
+
+.file-info {
+    font-size:0.95rem;
+}
+
+.file-upload-wrapper{
+    display:flex;
+    align-items:center;
+    gap:12px;
+    flex-wrap:wrap;
+}
+
+.file-label{
+    display:inline-block;
+    padding:10px 16px;
+    border-radius:10px;
+    background:var(--accent);
+    color:white;
+    cursor:pointer;
+    transition:background 0.2s;
+}
+
+.file-label:hover{
+    background:#1e4ed8;
+}
+
+.file-chosen {
+    color:var(--muted); font-size:0.95rem;
+}

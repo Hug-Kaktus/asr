@@ -1,0 +1,21 @@
+{% extends 'transcriber/base.html' %}
+{% block content %}
+	<h1>Завантажити MP4 відео</h1>
+	<p class="muted">Завантажте MP4 файл. Аудіо буде витягнуто з файлу та буде створено транскрипт за допомогою нейронної мережі.</p>
+
+	{% if error %}
+		<p style="color:crimson;">{{ error }}</p>
+	{% endif %}
+
+	<form method="post" enctype="multipart/form-data">
+		{% csrf_token %}
+		<div class="file-upload-wrapper">
+            <label for="id_video" class="file-label">Вибрати файл</label>
+                {{ form.video }}
+            <span id="file-chosen" class="file-chosen">Файл не вибрано</span>
+        </div>
+		<button class="btn" type="submit">Завантажити та транскрибувати</button>
+	</form>
+
+	<hr style="margin-top:20px" />
+{% endblock %}
