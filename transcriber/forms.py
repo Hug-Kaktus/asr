@@ -6,7 +6,22 @@ class UploadForm(forms.Form):
 
     def clean_video(self):
         f = self.cleaned_data['video']
-        if f.content_type not in ('video/mp4', 'video/x-matroska', 'application/octet-stream'):
-            if not f.name.lower().endswith('.mp4'):
-                raise forms.ValidationError('Please upload an MP4 file.')
+
+        allowed_content_types = (
+            'video/mp4',
+            'video/x-matroska',
+            'audio/mpeg',
+            'application/octet-stream',
+        )
+
+        allowed_extensions = ('.mp4', '.mkv', '.mp3')
+
+        # MIME type check
+        if f.content_type not in allowed_content_types:
+            # Extension check as backup
+            if not any(f.name.lower().endswith(ext) for ext in allowed_extensions):
+                raise forms.ValidationError(
+                    'Будь ласка, завантажте файл у форматі MP4 або MP3.'
+                )
+
         return f

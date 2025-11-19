@@ -8,8 +8,7 @@ from .models import Video
 from tensorflow import keras
 from main import CTCLossModel
 
-# midsize_wav2vec = loaded_model = keras.models.load_model('./midsize_wav2vec.keras',
-#                                                          custom_objects={"CTCLossModel": CTCLossModel})
+# midsize_wav2vec = keras.models.load_model('./midsize_wav2vec.keras', custom_objects={"CTCLossModel": CTCLossModel})
 
 
 def transcribe_with_midsize_wav2vec(audio_path: str) -> str:
