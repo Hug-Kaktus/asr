@@ -1,6 +1,7 @@
 import tensorflow as tf
 import keras
 from datasets import load_dataset
+import matplotlib.pyplot as plt
 
 from models import build_wav2vec2_ctc_model
 from data_processing import prepare_dataset, VOCAB
@@ -96,6 +97,13 @@ class CTCLossModel(tf.keras.Model):
         return self.base(inputs)
 
 
+loss_values = []
+loss_values_end = []
+
+steps = list(range(10, 110, 10))
+steps_end = list(range(40900, 41000, 10))
+
+
 def train(model: CTCLossModel, dataset: tf.data.Dataset, epochs: int):
     optimizer = tf.keras.optimizers.Adam()
     model.compile(optimizer=optimizer)
@@ -107,6 +115,12 @@ def train(model: CTCLossModel, dataset: tf.data.Dataset, epochs: int):
         for step, batch in enumerate(dataset):
             logs = model.train_step(batch)
             if step % 10 == 0:
+
+                if step <= 100:
+                    loss_values.append(float(logs['loss']))
+                if step >= 40900 < 41000:
+                    loss_values_end.append(float(logs['loss']))
+
                 print(f"  Step {step}: Loss = {logs['loss']:.4f}")
                 if logs['loss'] < 5:
                     dummy_input = tf.random.normal([1, 100, 64])
@@ -143,3 +157,25 @@ if __name__ == '__main__':
     base_model(dummy_input)
     base_model.summary()
     # loaded_model = keras.models.load_model('./final_model.keras', custom_objects={"CTCLossModel": CTCLossModel})
+
+    fig, axes = plt.subplots(1, 2, figsize=(12, 5))
+
+    # --- Left plot ---
+    axes[0].plot(steps, loss_values, marker='o', linestyle='-', color='b', linewidth=2)
+    axes[0].set_title('Training Loss first 100 steps', fontsize=14)
+    axes[0].set_xlabel('Step', fontsize=12)
+    axes[0].set_ylabel('Loss', fontsize=12)
+    axes[0].grid(True, linestyle='--', alpha=0.6)
+
+    for i, loss in enumerate(loss_values_end):
+        axes[0].text(steps_end[i], loss + 0.02, f"{loss:.2f}", ha='center', fontsize=12)
+
+    # --- Right plot ---
+    axes[1].plot(steps_end, loss_values_end, marker='o', linestyle='-', color='b', linewidth=2)
+    axes[1].set_title('Training Loss last 100 steps', fontsize=14)
+    axes[1].set_xlabel('Step', fontsize=12)
+    axes[1].set_ylabel('Loss', fontsize=12)
+    axes[1].grid(True, linestyle='--', alpha=0.6)
+
+    fig.tight_layout()
+    plt.show()
