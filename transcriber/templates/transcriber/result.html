@@ -2,8 +2,8 @@
 {% block content %}
 	<h1>Транскрипт</h1>
 	<div class="meta">
-		<div class="file-info">Відео: <strong>{{ video.file.name }}</strong></div>
-		<div class="muted">Дата і час завантаження: {{ video.uploaded_at }}</div>
+		<div class="file-info">Медіа: <strong>{{ video.file.name }}</strong></div>
+		<!--  <div class="muted">Дата і час завантаження: {{ video.uploaded_at }}</div> -->
 	</div>
 
 	{% if transcript %}
@@ -12,5 +12,5 @@
 		<p class="muted">Розшифровку не знайдено. Можливо, сеанс закінчився — спробуйте завантажити ще раз.</p>
 	{% endif %}
 
-	<p style="margin-top:16px"><a href="{% url 'transcriber:upload' %}">Транскрибувати ще одне відео</a></p>
+	<p style="margin-top:16px"><a href="{% url 'transcriber:upload' %}">Транскрибувати ще один файл</a></p>
 {% endblock %}

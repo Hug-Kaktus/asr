@@ -2,7 +2,7 @@ from django import forms
 
 
 class UploadForm(forms.Form):
-    video = forms.FileField(label='Виберіть відео MP4.')
+    video = forms.FileField(label='Виберіть медіа MP3 або MP4.')
 
     def clean_video(self):
         f = self.cleaned_data['video']
