@@ -1,12 +1,13 @@
-import os
+import time
 
-REF_DIR = "transcriber/static/references"
-HYP_DIR = "transcriber/static/hypotheses"
+from datasets import load_dataset
+import keras
+from main import *
 
 
-def load_text(path):
-    with open(path, 'r', encoding='utf-8') as f:
-        return [line.strip() for line in f.readlines()]
+dataset = load_dataset("speech-uk/voice-of-america", split='test', streaming=True)
+midsize_wav2vec = keras.models.load_model('./final_model.keras', custom_objects={"CTCLossModel": CTCLossModel})
+transcribe_using_midsize_wav2vec(midsize_wav2vec, audio)
 
 
 def levenshtein(a, b):
@@ -72,18 +73,20 @@ if __name__ == "__main__":
     cers = []
     wers = []
     sers = []
-    reference_files = sorted([f for f in os.listdir(REF_DIR)])
-    hypothesis_files = sorted([f for f in os.listdir(HYP_DIR)])
-    common_files = sorted(set(reference_files) & set(hypothesis_files))
-    for filename in common_files:
-        ref_text = load_text(os.path.join(REF_DIR, filename))
-        hyp_text = load_text(os.path.join(HYP_DIR, filename))
+    rtfs = []
+    for element in dataset:
+        ref_text = element['transcription']
+        start_time = time.perf_counter()
+        hyp_text = transcribe_using_midsize_wav2vec(element['audio']['array'])
+        end_time = time.perf_counter()
+        elapsed_time = end_time - start_time
 
         cers.append(compute_cer(ref_text, hyp_text))
         wers.append(compute_wer(ref_text, hyp_text))
         sers.append(compute_ser(ref_text, hyp_text))
+        rtfs.append(elapsed_time / element['duration'])
 
-    common_files = sorted(set(reference_files) & set(hypothesis_files))
     print("CER:", sum(cers) / len(cers))
     print("WER:", sum(wers) / len(wers))
     print("SER:", sum(sers) / len(sers))
+    print("RTF:", sum(rtfs) / len(rtfs))
