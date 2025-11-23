@@ -7,7 +7,6 @@ from main import *
 
 dataset = load_dataset("speech-uk/voice-of-america", split='test', streaming=True)
 midsize_wav2vec = keras.models.load_model('./final_model.keras', custom_objects={"CTCLossModel": CTCLossModel})
-transcribe_using_midsize_wav2vec(midsize_wav2vec, audio)
 
 
 def levenshtein(a, b):
@@ -77,7 +76,7 @@ if __name__ == "__main__":
     for element in dataset:
         ref_text = element['transcription']
         start_time = time.perf_counter()
-        hyp_text = transcribe_using_midsize_wav2vec(element['audio']['array'])
+        hyp_text = transcribe_using_midsize_wav2vec(midsize_wav2vec, element['audio']['array'])
         end_time = time.perf_counter()
         elapsed_time = end_time - start_time
 
